@@ -28,3 +28,6 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project Architecture
+- Keep wedding details, palette, and image pointers in `src/data/wedding.ts`, page composition in the invitation component, and validated guest-data calls in `.functions.ts` modules so content remains editable and server-only work stays behind the RPC boundary.
