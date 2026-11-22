@@ -9,7 +9,7 @@ describe("The Odyssey wedding details", () => {
   it("keeps the couple, title, date, day, and ceremony time editable in one place", () => {
     expect(wedding.title).toBe("The Odyssey");
     expect(wedding.brideName).toBe("Theertha");
-    expect(wedding.groomName).toBe("Angith");
+    expect(wedding.groomName).toBe("Anigith");
     expect(wedding.dateIso).toBe("2027-01-10");
     expect(new Date(`${wedding.dateIso}T00:00:00`).getDay()).toBe(0);
     expect(wedding.weekday).toBe("Sunday");

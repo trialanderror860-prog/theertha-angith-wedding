@@ -1,12 +1,17 @@
-import childhoodPhoto from "@/assets/theertha-anjith-childhood.jpeg.asset.json";
-import openingPhoto from "@/assets/theertha-anjith-opening.jpeg.asset.json";
-import storyPhoto from "@/assets/theertha-anjith-story.jpeg.asset.json";
-import dressCodePhoto from "@/assets/wedding-dress-code.jpeg.asset.json";
+// import childhoodPhoto from "@/assets/theertha-anjith-childhood.jpeg.asset.json";
+import openingPhoto from "@/assets/Opening_page_photo.jpeg";
+import storyPhoto from "@/assets/Our_story_photo.jpeg";
+import dressCodePhoto from "@/assets/dresscode.jpeg";
+import childhoodPhoto from "@/assets/our_story_childhood.jpeg";
+import closingPhoto from "@/assets/End_page_photo.jpeg";
+import venue1Photo from "@/assets/venue_image1.png";
+import venue2Photo from "@/assets/venue_image_2.png";
+import holdingHandsPhoto from "@/assets/holding_hands.jpeg";
 
 export const wedding = {
   title: "The Odyssey",
   brideName: "Theertha",
-  groomName: "Angith",
+  groomName: "Anigith",
   dateIso: "2027-01-10",
   dateTimeLocal: "2027-01-10T11:30:00",
   weekday: "Sunday",
@@ -15,18 +20,21 @@ export const wedding = {
   storyParagraph:
     "Every journey has a beginning. Ours is made of little moments, unexpected smiles, beautiful memories and a love that continues to grow.",
   venue: {
-    name: "",
-    address: "",
-    city: "",
-    mapLink: "",
-    description: "",
+    name: "M Mukundan Park",
+    address: "M Mukundan Park, PG6Q+4WW, Palloor, Mahé, 673312",
+    city: "Keralam",
+    mapLink: "https://maps.app.goo.gl/6L9pzk7BDmtSoaoo6",
+    description: "Find the venue details for where we begin this next chapter.",
   },
   photos: {
-    opening: openingPhoto.url,
-    story: storyPhoto.url,
-    childhood: childhoodPhoto.url,
-    dressCode: dressCodePhoto.url,
-    closing: openingPhoto.url,
+    opening: openingPhoto,
+    story: storyPhoto,
+    childhood: childhoodPhoto,
+    dressCode: dressCodePhoto,
+    closing: closingPhoto,
+    venue1: venue1Photo,
+    venue2: venue2Photo,
+    holdingHands: holdingHandsPhoto,
   },
   palette: [
     { name: "Deep Olive", hex: "#76783E", swatchClass: "bg-olive-deep" },
