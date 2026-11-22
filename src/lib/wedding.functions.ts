@@ -108,7 +108,7 @@ export type WeddingRsvpItem = {
 export const getWeddingRsvps = createServerFn({ method: "POST" })
   .validator((input: { pin: string }) => input)
   .handler(async ({ data }) => {
-    if (data.pin !== "0106") {
+    if (data.pin !== "0207") {
       return { ok: false, error: "Incorrect PIN. Access denied.", rsvps: [] as WeddingRsvpItem[] };
     }
 

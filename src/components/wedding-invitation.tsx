@@ -94,7 +94,7 @@ export function WeddingInvitation() {
 
   const handleUnlockBridePortal = async (e: FormEvent) => {
     e.preventDefault();
-    if (bridePin !== "0106") {
+    if (bridePin !== "0207") {
       setPinError("Incorrect PIN !");
       return;
     }
