@@ -22,7 +22,7 @@ export const wedding = {
   venue: {
     name: "M Mukundan Park",
     address: "M Mukundan Park, PG6Q+4WW, Palloor, Mahé, 673312",
-    city: "Keralam",
+    city: "Kerala",
     mapLink: "https://maps.app.goo.gl/6L9pzk7BDmtSoaoo6",
     description: "Find the venue details for where we begin this next chapter.",
   },
