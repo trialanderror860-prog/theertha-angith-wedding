@@ -94,3 +94,40 @@ export const getWeddingWishes = createServerFn({ method: "GET" }).handler(async 
 
   return { ok: true, wishes: data };
 });
+
+export type WeddingRsvpItem = {
+  id: string;
+  guest_name: string;
+  phone: string;
+  attendance: "accepted" | "declined";
+  guest_count: number;
+  message: string | null;
+  submitted_at: string;
+};
+
+export const getWeddingRsvps = createServerFn({ method: "POST" })
+  .validator((input: { pin: string }) => input)
+  .handler(async ({ data }) => {
+    if (data.pin !== "0106") {
+      return { ok: false, error: "Incorrect PIN. Access denied.", rsvps: [] as WeddingRsvpItem[] };
+    }
+
+    const databaseUrl = process.env["SUPABASE_URL"];
+    const publishableKey =
+      process.env["SUPABASE_SERVICE_ROLE_KEY"] || process.env["SUPABASE_PUBLISHABLE_KEY"];
+    if (!databaseUrl || !publishableKey) {
+      return { ok: false, error: "Database configuration missing.", rsvps: [] as WeddingRsvpItem[] };
+    }
+
+    const database = createPublicDatabaseClient(databaseUrl, publishableKey);
+    const { data: rsvps, error } = await database
+      .from("wedding_rsvps")
+      .select("id, guest_name, phone, attendance, guest_count, message, submitted_at")
+      .order("submitted_at", { ascending: false });
+
+    if (error) {
+      return { ok: false, error: error.message, rsvps: [] as WeddingRsvpItem[] };
+    }
+
+    return { ok: true, rsvps: (rsvps as WeddingRsvpItem[]) ?? [] };
+  });

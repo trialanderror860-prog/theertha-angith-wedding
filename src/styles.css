@@ -194,13 +194,13 @@
 }
 
 .fade-in-up {
-  animation: fade-in-up 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: fade-in-up 1200ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes fade-in-up {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(24px);
   }
   to {
     opacity: 1;
@@ -209,7 +209,7 @@
 }
 
 .fade-in {
-  animation: fade-in 700ms ease-out both;
+  animation: fade-in 1000ms ease-out both;
 }
 
 @keyframes fade-in {
@@ -221,11 +221,11 @@
   }
 }
 
-/* Scroll reveal system */
+/* Scroll reveal system - smooth & relaxed luxury pace */
 .reveal-on-scroll {
   opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(30px);
+  transition: opacity 1.4s cubic-bezier(0.22, 1, 0.36, 1), transform 1.8s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: opacity, transform;
 }
 
@@ -235,14 +235,14 @@
 }
 
 .reveal-on-scroll.reveal-left {
-  transform: translateX(-30px);
+  transform: translateX(-36px);
 }
 .reveal-on-scroll.reveal-left.is-revealed {
   transform: translateX(0);
 }
 
 .reveal-on-scroll.reveal-right {
-  transform: translateX(30px);
+  transform: translateX(36px);
 }
 .reveal-on-scroll.reveal-right.is-revealed {
   transform: translateX(0);

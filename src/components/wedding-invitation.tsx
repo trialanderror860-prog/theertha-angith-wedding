@@ -5,14 +5,23 @@ import {
   ArrowUp,
   ArrowUpRight,
   CalendarDays,
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
+  Download,
   Heart,
+  Lock,
   MapPin,
   Menu,
+  MessageCircle,
+  Phone,
+  Search,
+  Unlock,
+  Users,
   Volume2,
   VolumeX,
   X,
+  XCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -22,9 +31,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { wedding } from "@/data/wedding";
 import { getCountdownParts, type CountdownParts } from "@/lib/countdown";
 import {
+  getWeddingRsvps,
   getWeddingWishes,
   submitWeddingRsvp,
   submitWeddingWish,
+  type WeddingRsvpItem,
 } from "@/lib/wedding.functions";
 import { weddingRsvpSchema, weddingWishSchema } from "@/lib/wedding-validation";
 import { prependWeddingWish, type WeddingWish } from "@/lib/wedding-wishes";
@@ -59,29 +70,114 @@ export function WeddingInvitation() {
   const saveRsvp = useServerFn(submitWeddingRsvp);
   const saveWish = useServerFn(submitWeddingWish);
   const loadWeddingWishes = useServerFn(getWeddingWishes);
+  const loadRsvps = useServerFn(getWeddingRsvps);
+
+  const [bridePortalOpen, setBridePortalOpen] = useState(false);
+  const [bridePin, setBridePin] = useState("");
+  const [isPinAuthenticated, setIsPinAuthenticated] = useState(false);
+  const [pinError, setPinError] = useState("");
+  const [rsvps, setRsvps] = useState<WeddingRsvpItem[]>([]);
+  const [rsvpsLoading, setRsvpsLoading] = useState(false);
+  const [rsvpFilter, setRsvpFilter] = useState<"all" | "accepted" | "declined">("all");
+  const [rsvpSearch, setRsvpSearch] = useState("");
+
+  useEffect(() => {
+    const handleHash = () => {
+      if (window.location.hash === "#bride-portal") {
+        setBridePortalOpen(true);
+      }
+    };
+    handleHash();
+    window.addEventListener("hashchange", handleHash);
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, []);
+
+  const handleUnlockBridePortal = async (e: FormEvent) => {
+    e.preventDefault();
+    if (bridePin !== "0106") {
+      setPinError("Incorrect PIN !");
+      return;
+    }
+    setPinError("");
+    setRsvpsLoading(true);
+    try {
+      const res = await loadRsvps({ data: { pin: bridePin } });
+      if (res.ok) {
+        setIsPinAuthenticated(true);
+        setRsvps(res.rsvps);
+      } else {
+        setPinError(res.error || "Could not load responses.");
+      }
+    } catch {
+      setPinError("Connection error. Please try again.");
+    } finally {
+      setRsvpsLoading(false);
+    }
+  };
+
+  const exportRsvpsCsv = () => {
+    if (!rsvps.length) return;
+    const headers = ["Guest Name", "Phone", "Attendance", "Number of Guests", "Date Submitted"];
+    const rows = rsvps.map((r) => [
+      `"${r.guest_name.replace(/"/g, '""')}"`,
+      `"${r.phone.replace(/"/g, '""')}"`,
+      r.attendance === "accepted" ? "Attending" : "Declined",
+      r.guest_count,
+      `"${new Date(r.submitted_at).toLocaleString()}"`,
+    ]);
+    const csvContent = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Theertha_Anigith_RSVP_List_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     const audio = new Audio("/music.mp3");
     audio.loop = true;
-    audio.volume = 0.35;
+    audio.volume = 0.4;
+    audio.preload = "auto";
+    audio.setAttribute("playsinline", "true");
+    audio.setAttribute("webkit-playsinline", "true");
     audioRef.current = audio;
 
-    const startOnInteraction = () => {
-      audio
-        .play()
-        .then(() => setIsPlayingMusic(true))
-        .catch(() => {});
-      window.removeEventListener("click", startOnInteraction);
-      window.removeEventListener("touchstart", startOnInteraction);
+    // Attempt direct autoplay immediately
+    audio
+      .play()
+      .then(() => setIsPlayingMusic(true))
+      .catch(() => {
+        // Expected on mobile browsers with strict autoplay policies
+      });
+
+    // Fallback: unlock and play on first user interaction across mobile & desktop
+    const unlockEvents = ["click", "touchstart", "touchend", "pointerdown", "scroll", "keydown"];
+    const unlockAudio = () => {
+      if (audio.paused) {
+        audio
+          .play()
+          .then(() => setIsPlayingMusic(true))
+          .catch(() => {});
+      }
+      unlockEvents.forEach((evt) => {
+        window.removeEventListener(evt, unlockAudio);
+        document.removeEventListener(evt, unlockAudio);
+      });
     };
 
-    window.addEventListener("click", startOnInteraction, { once: true });
-    window.addEventListener("touchstart", startOnInteraction, { once: true });
+    unlockEvents.forEach((evt) => {
+      window.addEventListener(evt, unlockAudio, { passive: true });
+      document.addEventListener(evt, unlockAudio, { passive: true });
+    });
 
     return () => {
       audio.pause();
-      window.removeEventListener("click", startOnInteraction);
-      window.removeEventListener("touchstart", startOnInteraction);
+      unlockEvents.forEach((evt) => {
+        window.removeEventListener(evt, unlockAudio);
+        document.removeEventListener(evt, unlockAudio);
+      });
     };
   }, []);
 
@@ -338,7 +434,7 @@ export function WeddingInvitation() {
               {wedding.title}
             </p>
             <div className="mx-auto my-5 h-px w-16 bg-mustard-yellow md:mx-0" />
-            <p className="mx-auto max-w-md text-sm leading-7 text-olive-deep/80 sm:text-base text-center md:text-left">
+              <p className="mx-auto max-w-md text-sm leading-7 text-olive-deep/80 sm:text-base text-center md:text-left">
               An odyssey of two souls, who decide to step into a lifetime, side by side.
             </p>
             <p className="mx-auto mt-3 max-w-md font-serif text-xl leading-relaxed text-olive-deep sm:text-2xl text-center md:text-left">
@@ -356,14 +452,14 @@ export function WeddingInvitation() {
 
         <section id="our-story" className="scroll-mt-20 bg-sage-green/25 px-5 py-16 sm:px-8 sm:py-24 lg:px-12">
           <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[1.1fr_.9fr] lg:gap-20">
-            <div className="reveal-on-scroll reveal-left grid grid-cols-[1.1fr_.9fr] items-end gap-3 sm:gap-5">
+            {/* <div className="reveal-on-scroll reveal-left grid grid-cols-[1.1fr_.9fr] items-end gap-3 sm:gap-5">
               <figure className="image-card-hover group min-w-0">
                 <div className="overflow-hidden border border-olive-deep/15 bg-warm-cream/40 p-2 shadow-sm">
                   <img
                     src={wedding.photos.story}
                     alt="Theertha and Anigith sharing a smile indoors."
                     loading="lazy"
-                    className="aspect-[4/5] w-full object-cover object-[50%_47%] transition-transform duration-700 group-hover:scale-105"
+                    className="aspect-[4/5] w-full object-cover object-[50%_15%] transition-transform duration-700 group-hover:scale-105"
                   />
                 </div>
                 <figcaption className="mt-2 text-[0.65rem] uppercase text-olive-deep/65 sm:text-xs">
@@ -383,7 +479,35 @@ export function WeddingInvitation() {
                   Where everything started
                 </figcaption>
               </figure>
-            </div>
+            </div> */}
+            <div className="reveal-on-scroll reveal-left grid grid-cols-2 items-end gap-3 sm:gap-5">
+            <figure className="image-card-hover group min-w-0">
+              <div className="overflow-hidden border border-olive-deep/15 bg-warm-cream/40 p-2 shadow-sm">
+                <img
+                  src={wedding.photos.story}
+                  alt="Theertha and Anigith sharing a smile indoors."
+                  loading="lazy"
+                  className="aspect-[4/5] w-full object-cover object-[50%_15%] transition-transform duration-700 group-hover:scale-105"
+                />
+              </div>
+              <figcaption className="mt-2 text-[0.65rem] uppercase text-olive-deep/65 sm:text-xs">
+                A moment together
+              </figcaption>
+            </figure>
+            <figure className="image-card-hover group min-w-0">
+              <div className="overflow-hidden border border-olive-deep/15 bg-warm-cream/40 p-2 shadow-sm">
+                <img
+                  src={wedding.photos.childhood}
+                  alt="Theertha and Anigith as children, standing together."
+                  loading="lazy"
+                  className="aspect-[4/5] w-full object-cover object-[50%_20%] transition-transform duration-700 group-hover:scale-105"
+                />
+              </div>
+              <figcaption className="mt-2 text-[0.65rem] uppercase text-olive-deep/65 sm:text-xs">
+                Where everything started
+              </figcaption>
+            </figure>
+          </div>
             <div className="reveal-on-scroll reveal-right max-w-lg">
               {/* <p className="text-xs uppercase text-olive-green">Where everything started.</p> */}
               <h2 className="mt-3 font-serif text-4xl font-medium leading-tight text-olive-deep sm:text-6xl">
@@ -401,13 +525,13 @@ export function WeddingInvitation() {
         </section>
 
         <section id="countdown" className="relative scroll-mt-20 overflow-hidden bg-olive-deep px-5 py-16 text-warm-cream sm:px-8 sm:py-24 lg:px-12">
-          {/* Subtle photographic background overlay */}
-          <div className="pointer-events-none absolute inset-0 z-0">
+          {/* Subtle photographic background overlay - starts below the date and time tab */}
+          <div className="pointer-events-none absolute inset-x-0 top-24 sm:top-32 bottom-0 z-0 overflow-hidden">
             <img
               src={wedding.photos.holdingHands}
               alt=""
               aria-hidden="true"
-              className="h-full w-full object-cover object-center opacity-20 mix-blend-luminosity filter contrast-125 scale-105"
+              className="h-full w-full object-cover object-top opacity-30 mix-blend-luminosity filter contrast-125 scale-105"
             />
             {/* Color blend layers to harmonize with the olive theme and preserve text readability */}
             <div className="absolute inset-0 bg-olive-deep/75 mix-blend-multiply" />
@@ -865,7 +989,14 @@ export function WeddingInvitation() {
       </main>
 
       <footer className="flex flex-col items-center justify-between gap-3 px-5 py-7 text-center text-xs text-olive-deep/70 sm:flex-row sm:px-8 lg:px-12">
-        {/* <span>{wedding.brideName} &amp; {wedding.groomName}</span> */}
+        <button
+          type="button"
+          onClick={() => setBridePortalOpen(true)}
+          className="inline-flex items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity text-xs uppercase tracking-wider text-olive-deep/75 hover:text-olive-deep"
+        >
+          <Lock size={12} aria-hidden="true" />
+          <span>Bride's Corner</span>
+        </button>
         <span className="font-hand text-xl text-olive-green">Made with love.</span>
         <a href="#home" className="inline-flex items-center gap-1 uppercase hover:text-olive-deep">
           Back to top <CalendarDays size={13} aria-hidden="true" />
@@ -890,6 +1021,266 @@ export function WeddingInvitation() {
           )}
         </button>
       </div>
+
+      {/* Bride's RSVP Portal Modal */}
+      {bridePortalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl border border-olive-deep/20 bg-warm-cream shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-olive-deep/15 px-6 py-4 bg-sage-green/20">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-mustard-yellow/40 text-olive-deep">
+                  {isPinAuthenticated ? <Unlock size={16} /> : <Lock size={16} />}
+                </div>
+                <div>
+                  <h3 className="font-serif text-lg sm:text-xl font-semibold text-olive-deep">
+                    Bride's RSVP Portal
+                  </h3>
+                  <p className="text-[0.7rem] text-olive-deep/70 uppercase tracking-wider">
+                    {isPinAuthenticated ? "Private Guest Tracker" : "Protected Access"}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBridePortalOpen(false)}
+                className="rounded-full p-1.5 text-olive-deep/70 hover:bg-olive-deep/10 hover:text-olive-deep transition-colors"
+                aria-label="Close portal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-5 sm:p-6">
+              {!isPinAuthenticated ? (
+                /* PIN Entry Form */
+                <form onSubmit={handleUnlockBridePortal} className="mx-auto max-w-sm py-8 text-center space-y-5">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-pastel-yellow/50 text-olive-deep">
+                    <Lock size={26} />
+                  </div>
+                  <div>
+                    <h4 className="font-serif text-2xl font-medium text-olive-deep">Enter 4-Digit PIN</h4>
+                    <p className="mt-1 text-xs text-olive-deep/75">
+                      Please enter your private passcode to view all guest responses.
+                    </p>
+                  </div>
+                  <div className="mx-auto max-w-[200px]">
+                    <Input
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={4}
+                      pattern="[0-9]*"
+                      autoFocus
+                      placeholder="••••"
+                      value={bridePin}
+                      onChange={(e) => setBridePin(e.target.value)}
+                      className="text-center font-mono text-2xl tracking-[0.5em] h-12 bg-warm-cream/80 border-olive-deep/20"
+                    />
+                  </div>
+                  {pinError && (
+                    <p className="text-xs text-red-600 font-medium">{pinError}</p>
+                  )}
+                  <Button
+                    type="submit"
+                    disabled={rsvpsLoading || bridePin.length < 4}
+                    className="w-full bg-olive-deep text-warm-cream hover:bg-olive-green"
+                  >
+                    {rsvpsLoading ? "Verifying..." : "Unlock RSVP Responses"}
+                  </Button>
+                </form>
+              ) : (
+                /* Authenticated Dashboard */
+                <div className="space-y-6">
+                  {/* Summary Metric Cards */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="rounded-xl border border-olive-deep/15 bg-sage-green/20 p-3 sm:p-4 text-center">
+                      <p className="text-[0.65rem] sm:text-xs uppercase tracking-wider text-olive-deep/70 font-medium">Attending</p>
+                      <p className="mt-1 font-serif text-2xl sm:text-3xl font-bold text-olive-deep">
+                        {rsvps
+                          .filter((r) => r.attendance === "accepted")
+                          .reduce((sum, r) => sum + (Number(r.guest_count) || 1), 0)}
+                      </p>
+                      <span className="text-[0.65rem] text-olive-green">Guests confirmed</span>
+                    </div>
+
+                    <div className="rounded-xl border border-olive-deep/15 bg-pastel-yellow/30 p-3 sm:p-4 text-center">
+                      <p className="text-[0.65rem] sm:text-xs uppercase tracking-wider text-olive-deep/70 font-medium">Responses</p>
+                      <p className="mt-1 font-serif text-2xl sm:text-3xl font-bold text-olive-deep">
+                        {rsvps.length}
+                      </p>
+                      <span className="text-[0.65rem] text-olive-green">Total submissions</span>
+                    </div>
+
+                    <div className="rounded-xl border border-olive-deep/15 bg-warm-cream/60 p-3 sm:p-4 text-center">
+                      <p className="text-[0.65rem] sm:text-xs uppercase tracking-wider text-olive-deep/70 font-medium">Can't Make It</p>
+                      <p className="mt-1 font-serif text-2xl sm:text-3xl font-bold text-olive-deep/80">
+                        {rsvps.filter((r) => r.attendance === "declined").length}
+                      </p>
+                      <span className="text-[0.65rem] text-olive-deep/60">Regrets</span>
+                    </div>
+                  </div>
+
+                  {/* Actions Bar: Search, Filter & Download */}
+                  <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between pt-2">
+                    {/* Search */}
+                    <div className="relative flex-1">
+                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-olive-deep/50" />
+                      <Input
+                        type="text"
+                        placeholder="Search guest or phone..."
+                        value={rsvpSearch}
+                        onChange={(e) => setRsvpSearch(e.target.value)}
+                        className="pl-8 text-xs bg-warm-cream/80 border-olive-deep/20 h-9"
+                      />
+                    </div>
+
+                    {/* Filter buttons */}
+                    <div className="flex items-center gap-1 rounded-lg border border-olive-deep/15 p-0.5 bg-sage-green/15 text-xs">
+                      {(["all", "accepted", "declined"] as const).map((filter) => (
+                        <button
+                          key={filter}
+                          type="button"
+                          onClick={() => setRsvpFilter(filter)}
+                          className={`px-2.5 py-1 rounded-md text-xs font-medium capitalize transition-colors ${
+                            rsvpFilter === filter
+                              ? "bg-olive-deep text-warm-cream shadow-xs"
+                              : "text-olive-deep/75 hover:text-olive-deep"
+                          }`}
+                        >
+                          {filter === "all"
+                            ? `All (${rsvps.length})`
+                            : filter === "accepted"
+                            ? `Yes (${rsvps.filter((r) => r.attendance === "accepted").length})`
+                            : `No (${rsvps.filter((r) => r.attendance === "declined").length})`}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Export CSV button */}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={exportRsvpsCsv}
+                      className="border-olive-deep/20 hover:bg-mustard-yellow text-xs gap-1.5 h-9 shrink-0"
+                    >
+                      <Download size={13} />
+                      <span>Download CSV</span>
+                    </Button>
+                  </div>
+
+                  {/* Guest List */}
+                  <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                    {rsvps
+                      .filter((r) => {
+                        if (rsvpFilter !== "all" && r.attendance !== rsvpFilter) return false;
+                        if (!rsvpSearch.trim()) return true;
+                        const query = rsvpSearch.toLowerCase();
+                        return (
+                          r.guest_name.toLowerCase().includes(query) ||
+                          r.phone.toLowerCase().includes(query)
+                        );
+                      })
+                      .map((item) => {
+                        const cleanPhone = item.phone.replace(/[^0-9]/g, "");
+                        const waPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+                        return (
+                          <div
+                            key={item.id}
+                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-olive-deep/15 bg-warm-cream/90 p-3.5 shadow-xs transition-all hover:border-olive-deep/30"
+                          >
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-serif text-base font-semibold text-olive-deep">
+                                  {item.guest_name}
+                                </span>
+                                {item.attendance === "accepted" ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-olive-green/15 px-2 py-0.5 text-[0.65rem] font-semibold text-olive-green">
+                                    <CheckCircle2 size={11} />
+                                    Attending ({item.guest_count} {item.guest_count === 1 ? "guest" : "guests"})
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[0.65rem] font-semibold text-red-700">
+                                    <XCircle size={11} />
+                                    Can't Make It
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-olive-deep/70">
+                                <span>Phone: {item.phone}</span>
+                                <span className="mx-2 text-olive-deep/30">·</span>
+                                <span>
+                                  {new Date(item.submitted_at).toLocaleDateString("en-GB", {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                              </p>
+                              {item.message && (
+                                <p className="text-xs italic text-olive-deep/80 pt-1">
+                                  “{item.message}”
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Contact Shortcuts: Call & WhatsApp */}
+                            <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-olive-deep/10">
+                              <a
+                                href={`tel:${item.phone}`}
+                                title={`Call ${item.guest_name}`}
+                                className="inline-flex items-center gap-1 rounded-md border border-olive-deep/20 bg-warm-cream px-2.5 py-1 text-xs text-olive-deep hover:bg-olive-deep hover:text-warm-cream transition-colors"
+                              >
+                                <Phone size={12} />
+                                <span>Call</span>
+                              </a>
+                              <a
+                                href={`https://wa.me/${waPhone}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                title={`WhatsApp ${item.guest_name}`}
+                                className="inline-flex items-center gap-1 rounded-md border border-emerald-600/30 bg-emerald-50 px-2.5 py-1 text-xs text-emerald-800 hover:bg-emerald-600 hover:text-white transition-colors"
+                              >
+                                <MessageCircle size={12} />
+                                <span>WhatsApp</span>
+                              </a>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                    {rsvps.length === 0 && (
+                      <div className="py-12 text-center text-xs text-olive-deep/60">
+                        No RSVP responses received yet.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between border-t border-olive-deep/15 px-6 py-3 bg-sage-green/10 text-xs text-olive-deep/70">
+              <span>Bride Security: Passcode Protected</span>
+              {isPinAuthenticated && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsPinAuthenticated(false);
+                    setBridePin("");
+                  }}
+                  className="text-xs font-semibold text-olive-deep hover:underline"
+                >
+                  Lock Portal
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
