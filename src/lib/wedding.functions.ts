@@ -75,7 +75,7 @@ export const submitWeddingWish = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const getApprovedWeddingWishes = createServerFn({ method: "GET" }).handler(async () => {
+export const getWeddingWishes = createServerFn({ method: "GET" }).handler(async () => {
   const databaseUrl = process.env["SUPABASE_URL"];
   const publishableKey = process.env["SUPABASE_PUBLISHABLE_KEY"];
   if (!databaseUrl || !publishableKey) {
@@ -86,8 +86,7 @@ export const getApprovedWeddingWishes = createServerFn({ method: "GET" }).handle
   const { data, error } = await database
     .from("wedding_wishes")
     .select("guest_name, message, submitted_at")
-    .order("submitted_at", { ascending: false })
-    .limit(8);
+    .order("submitted_at", { ascending: false });
 
   if (error || !data) {
     return { ok: false, wishes: [] as { guest_name: string; message: string; submitted_at: string }[] };

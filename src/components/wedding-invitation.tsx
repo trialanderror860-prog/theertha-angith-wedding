@@ -9,16 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { wedding } from "@/data/wedding";
 import { getCountdownParts, type CountdownParts } from "@/lib/countdown";
 import {
-  getApprovedWeddingWishes,
+  getWeddingWishes,
   submitWeddingRsvp,
   submitWeddingWish,
 } from "@/lib/wedding.functions";
 import { weddingRsvpSchema, weddingWishSchema } from "@/lib/wedding-validation";
+import { prependWeddingWish, type WeddingWish } from "@/lib/wedding-wishes";
 
 type Attendance = "accepted" | "declined";
 type FormState = "idle" | "submitting" | "success" | "error";
-type ApprovedWish = { guest_name: string; message: string; submitted_at: string };
-
 const navigation = [
   { label: "Home", href: "#home" },
   { label: "Our Story", href: "#our-story" },
@@ -37,12 +36,12 @@ export function WeddingInvitation() {
   const [rsvpFeedback, setRsvpFeedback] = useState("");
   const [wishesState, setWishesState] = useState<FormState>("idle");
   const [wishesFeedback, setWishesFeedback] = useState("");
-  const [approvedWishes, setApprovedWishes] = useState<ApprovedWish[]>([]);
+  const [guestWishes, setGuestWishes] = useState<WeddingWish[]>([]);
   const [guestCount, setGuestCount] = useState("1");
 
   const saveRsvp = useServerFn(submitWeddingRsvp);
   const saveWish = useServerFn(submitWeddingWish);
-  const loadApprovedWishes = useServerFn(getApprovedWeddingWishes);
+  const loadWeddingWishes = useServerFn(getWeddingWishes);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16);
@@ -63,13 +62,13 @@ export function WeddingInvitation() {
 
   useEffect(() => {
     let active = true;
-    void loadApprovedWishes().then((result) => {
-      if (active && result.ok) setApprovedWishes(result.wishes);
+    void loadWeddingWishes().then((result) => {
+      if (active && result.ok) setGuestWishes(result.wishes);
     });
     return () => {
       active = false;
     };
-  }, [loadApprovedWishes]);
+  }, [loadWeddingWishes]);
 
   const chooseAttendance = (choice: Attendance) => {
     setAttendance(choice);
@@ -144,6 +143,11 @@ export function WeddingInvitation() {
       }
       setWishesState("success");
       setWishesFeedback("Thank you for your beautiful wishes!");
+      setGuestWishes((wishes) => prependWeddingWish(wishes, {
+        guest_name: submission.data.guestName,
+        message: submission.data.message,
+        submitted_at: new Date().toISOString(),
+      }));
       event.currentTarget.reset();
     } catch {
       setWishesState("error");
@@ -228,7 +232,7 @@ export function WeddingInvitation() {
             <div className="overflow-hidden border border-olive-deep/15 bg-sage-green/20 p-2 sm:p-3">
               <img
                 src={wedding.photos.opening}
-                alt="Theertha and Anjith outdoors in greenery, smiling together."
+                alt="Theertha and Angith outdoors in greenery, smiling together."
                 className="aspect-[4/5] w-full object-cover object-[50%_44%]"
                 fetchPriority="high"
               />
@@ -280,7 +284,7 @@ export function WeddingInvitation() {
               <figure className="min-w-0">
                 <img
                   src={wedding.photos.story}
-                  alt="Theertha and Anjith sharing a smile indoors."
+                  alt="Theertha and Angith sharing a smile indoors."
                   loading="lazy"
                   className="aspect-[4/5] w-full object-cover object-[50%_47%]"
                 />
@@ -291,7 +295,7 @@ export function WeddingInvitation() {
               <figure className="min-w-0 pb-7 sm:pb-12">
                 <img
                   src={wedding.photos.childhood}
-                  alt="Theertha and Anjith as children, standing together."
+                  alt="Theertha and Angith as children, standing together."
                   loading="lazy"
                   className="aspect-[4/5] w-full object-cover object-center"
                 />
@@ -622,11 +626,11 @@ export function WeddingInvitation() {
                 </form>
               )}
 
-              {approvedWishes.length > 0 && (
+              {guestWishes.length > 0 && (
                 <div className="mt-8">
                   <p className="text-xs uppercase text-olive-green">Guest wishes</p>
                   <ul className="mt-4 divide-y divide-olive-deep/15">
-                    {approvedWishes.map((wish, index) => (
+                    {guestWishes.map((wish, index) => (
                       <li key={`${wish.submitted_at}-${index}`} className="py-4">
                         <p className="font-serif text-lg text-olive-deep">“{wish.message}”</p>
                         <p className="mt-1 text-xs text-olive-deep/65">{wish.guest_name}</p>
@@ -644,7 +648,7 @@ export function WeddingInvitation() {
             <figure>
               <img
                 src={wedding.photos.closing}
-                alt="Theertha and Anjith together outdoors in greenery."
+                alt="Theertha and Angith together outdoors in greenery."
                 loading="lazy"
                 className="aspect-[4/5] w-full object-cover object-[50%_44%]"
               />

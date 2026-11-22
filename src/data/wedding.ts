@@ -6,7 +6,7 @@ import dressCodePhoto from "@/assets/wedding-dress-code.jpeg.asset.json";
 export const wedding = {
   title: "The Odyssey",
   brideName: "Theertha",
-  groomName: "Anjith",
+  groomName: "Angith",
   dateIso: "2027-01-10",
   dateTimeLocal: "2027-01-10T11:30:00",
   weekday: "Sunday",
